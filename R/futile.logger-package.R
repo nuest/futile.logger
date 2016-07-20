@@ -1,4 +1,4 @@
-#' An easy to use logging package for R
+#' A Logging Utility for R
 #' 
 #' This package implements a logging system inspired by log4j. The basic idea
 #' of layouts, appenders, and loggers is faithful to log4j, while the
@@ -9,8 +9,8 @@
 #' \tabular{ll}{
 #' Package: \tab futile.logger\cr
 #' Type: \tab Package\cr
-#' Version: \tab 1.3.8\cr
-#' Date: \tab 2014-10-09\cr
+#' Version: \tab 1.4.3\cr
+#' Date: \tab 2016-07-10\cr
 #' License: \tab LGPL-3\cr
 #' LazyLoad: \tab yes\cr
 #' }
@@ -77,10 +77,11 @@
 #' 
 #' Layouts are responsible for formatting messages. This operation usually
 #' consists of adding the log level, a timestamp, plus some pretty-printing to
-#' make the log messages easy on the eyes. The package supplies two layouts:
+#' make the log messages easy on the eyes. The package supplies several layouts:
 #' 
 #' \describe{
 #'   \item{layout.simple}{Writes messages with a default format}
+#'   \item{layout.json}{Generates messages in a JSON format}
 #'   \item{layout.format}{Define your own format}
 #'   \item{layout.tracearg}{Print a variable name along with its value}
 #' }
@@ -89,7 +90,7 @@
 #' @aliases futile.logger-package futile.logger flog.namespace
 #' @docType package
 #' @exportPattern "^[^\\.]"
-#' @import lambda.r futile.options
+#' @import utils lambda.r futile.options
 #' @author Brian Lee Yung Rowe <r@@zatonovo.com>
 #' @seealso \code{\link{flog.logger}}, \code{\link{flog.threshold}},
 #' \code{\link{flog.layout}}, \code{\link{flog.appender}}

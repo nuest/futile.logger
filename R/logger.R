@@ -147,10 +147,18 @@ NULL
 
 # Get the namespace that a function resides in. If no namespace exists, then
 # return NULL.
+# @param .where: where in the call stack should be check. 
+#             0: current function (always
+#            -1: parents of this function.
+#            -3: when used within flog.*, 
+#                it refers to the original caller of flog.*
+#            -4: when used from flogger.name within a .log_level
+#
 # <environment: namespace:lambda.r>
-flog.namespace <- function(where=1)
+flog.namespace <- function(.where=-4)
 {
-  s <- capture.output(str(topenv(environment(sys.function(where))), give.attr=FALSE))
+  sf <- sys.function(.where - 1)
+  s <- capture.output(str(topenv(environment(sf)), give.attr=FALSE))
   if (length(grep('lambda.r',s)) > 0)
     s <- attr(sys.function(-5), 'topenv')
 
@@ -159,7 +167,6 @@ flog.namespace <- function(where=1)
   ns <- sub('.*namespace:([^>]+)>.*','\\1', s)
   ifelse(is.null(ns), 'ROOT', ns)
 }
-
 
 flog.trace <- function(msg, ..., name=flog.namespace(), capture=FALSE) {
   .log_level(msg, ..., level=TRACE,name=name, capture=capture)
@@ -302,6 +309,27 @@ flog.remove(name) %as%
 #' flog.info("Won't print")
 #' flog.threshold(INFO)
 #' flog.info("Will print")
+# Set the threshold
+flog.threshold('TRACE', name='ROOT') %as% flog.threshold(TRACE, name)
+flog.threshold('trace', name='ROOT') %as% flog.threshold(TRACE, name)
+flog.threshold('DEBUG', name='ROOT') %as% flog.threshold(DEBUG, name)
+flog.threshold('debug', name='ROOT') %as% flog.threshold(DEBUG, name)
+flog.threshold('INFO', name='ROOT') %as% flog.threshold(INFO, name)
+flog.threshold('info', name='ROOT') %as% flog.threshold(INFO, name)
+flog.threshold('WARN', name='ROOT') %as% flog.threshold(WARN, name)
+flog.threshold('warn', name='ROOT') %as% flog.threshold(WARN, name)
+flog.threshold('ERROR', name='ROOT') %as% flog.threshold(ERROR, name)
+flog.threshold('error', name='ROOT') %as% flog.threshold(ERROR, name)
+flog.threshold('FATAL', name='ROOT') %as% flog.threshold(FATAL, name)
+flog.threshold('fatal', name='ROOT') %as% flog.threshold(FATAL, name)
+
+flog.threshold(threshold, name='ROOT') %as%
+{
+  flog.logger(name, threshold=threshold)
+  invisible()
+}
+
+# Get the threshold
 flog.threshold(name) %::% character : character
 flog.threshold(name='ROOT') %as%
 {
@@ -309,12 +337,6 @@ flog.threshold(name='ROOT') %as%
   names(logger$threshold)
 }
 
-# Set the threshold
-flog.threshold(threshold, name='ROOT') %as%
-{
-  flog.logger(name, threshold=threshold)
-  invisible()
-}
 
 #' Always return the log message
 #'

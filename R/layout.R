@@ -13,6 +13,9 @@
 #' 
 #' # Decorate log messages with a standard format\cr
 #' layout.simple(level, msg, ...)
+#' 
+#' # Generate log messages as JSON\cr
+#' layout.json(level, msg, ...)
 #'
 #' # Decorate log messages using a custom format\cr
 #' layout.format(format, datetime.fmt="%Y-%m-%d %H:%M:%S")
@@ -43,11 +46,20 @@
 #' \item{~m}{The message}
 #' }
 #'
+#' \code{layout.json} converts the message and any additional objects provided
+#' to a JSON structure. E.g.:
+#' 
+#' flog.info("Hello, world", cat='asdf')
+#'  
+#' yields something like
+#' 
+#' \{"level":"INFO","timestamp":"2015-03-06 19:16:02 EST","message":"Hello, world","func":"(shell)","cat":["asdf"]\}
+#' 
 #' \code{layout.tracearg} is a special layout that takes a variable
 #' and prints its name and contents.
 #' 
 #' @name flog.layout
-#' @aliases layout.simple layout.format layout.tracearg
+#' @aliases layout.simple layout.format layout.tracearg layout.json
 #' @param \dots Used internally by lambda.r
 #' @author Brian Lee Yung Rowe
 #' @seealso \code{\link{flog.logger}} \code{\link{flog.appender}}
@@ -87,11 +99,41 @@ flog.layout(fn, name='ROOT') %as%
 layout.simple <- function(level, msg, ...)
 {
   the.time <- format(Sys.time(), "%Y-%m-%d %H:%M:%S")
-  parsed <- lapply(list(...), function(x) ifelse(is.null(x), 'NULL', x))
-  msg <- do.call(sprintf, c(msg, parsed))
+  if (length(list(...)) > 0) {
+    parsed <- lapply(list(...), function(x) ifelse(is.null(x), 'NULL', x))
+    msg <- do.call(sprintf, c(msg, parsed))
+  }
   sprintf("%s [%s] %s\n", names(level),the.time, msg)
 }
 
+# Get name of a parent function in call stack
+# @param .where: where in the call stack. -1 means parent of the caller.
+.get.parent.func.name <- function(.where) {
+  the.function <- tryCatch(deparse(sys.call(.where - 1)[[1]]), 
+        error=function(e) "(shell)")
+  the.function <- ifelse(
+    length(grep('flog\\.',the.function)) == 0, the.function, '(shell)')
+
+  the.function
+}
+
+# Generates a list object, then converts it to JSON and outputs it
+layout.json <- function(level, msg, ...) {
+  if (!requireNamespace("jsonlite", quietly=TRUE))
+    stop("layout.json requires jsonlite. Please install it.", call.=FALSE)
+  
+  the.function <- .get.parent.func.name(-3) # get name of the function 
+                                            # 3 deep in the call stack
+  
+  output_list <- list(
+    level=jsonlite::unbox(names(level)),
+    timestamp=jsonlite::unbox(format(Sys.time(), "%Y-%m-%d %H:%M:%S %z")),
+    message=jsonlite::unbox(msg),
+    func=jsonlite::unbox(the.function),
+    additional=...
+  )
+  jsonlite::toJSON(output_list, simplifyVector=TRUE)
+}
 
 # This parses and prints a user-defined format string. Available tokens are
 # ~l - Log level
@@ -104,15 +146,15 @@ layout.simple <- function(level, msg, ...)
 # flog.layout(layout)
 layout.format <- function(format, datetime.fmt="%Y-%m-%d %H:%M:%S")
 {
-  where <- 1
+  .where = -3 # get name of the function 3 deep in the call stack
+              # that is, the function that has called flog.*
   function(level, msg, ...) {
     if (! is.null(substitute(...))) msg <- sprintf(msg, ...)
     the.level <- names(level)
     the.time <- format(Sys.time(), datetime.fmt)
-    the.namespace <- ifelse(flog.namespace() == 'futile.logger','ROOT',flog.namespace())
-    #print(sys.calls())
-    the.function <- tryCatch(deparse(sys.call(where)[[1]]), error=function(e) "(shell)")
-    the.function <- ifelse(length(grep('flog\\.',the.function)) == 0, the.function, '(shell)')
+    the.namespace <- flog.namespace(.where)
+    the.namespace <- ifelse(the.namespace == 'futile.logger', 'ROOT', the.namespace)
+    the.function <- .get.parent.func.name(.where) 
     #pattern <- c('~l','~t','~n','~f','~m')
     #replace <- c(the.level, the.time, the.namespace, the.function, msg)
     message <- gsub('~l',the.level, format, fixed=TRUE)
