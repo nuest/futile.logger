@@ -5,6 +5,8 @@ Version: 1.4.3
 Date: 2016-07-10
 Author: Brian Lee Yung Rowe
 Maintainer: Brian Lee Yung Rowe <r@zatonovo.com>
+URL: https://github.com/zatonovo/futile.logger
+BugReports: https://github.com/zatonovo/futile.logger/issues
 Depends:
     R (>= 3.0.0)
 Imports:
