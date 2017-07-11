@@ -24,6 +24,9 @@ set to INFO.
 ```R
 flog.info("Hello, %s", "world")
 
+# Put pid in logging in multi-processing
+flog.info('%d message', Sys.getpid()) 
+
 # This won't print by default
 flog.debug("Goodbye, %s", "world")
 
@@ -44,13 +47,15 @@ Loggers
 A logger is simply a namespace bound to a threshold, an appender, and a
 formatter. Loggers are configured automatically whenever they are 
 referenced (for example when changing the threshold) inheriting the settings
-of the root logger. To explicitly create a logger call `log.logger()`.
+of the root logger. To explicitly create a logger call `flog.logger()`.
 
 ```R
 flog.logger("tawny", WARN, appender=appender.file('tawny.log'))
 ```
+Please notice that you shall not set the name as any of the following keywords:   
+'TRACE', 'trace', 'DEBUG', 'debug', 'INFO', 'info', 'WARN', 'warn', 'ERROR', 'error', 'FATAL', 'fatal'
 
-To remove a logger, use `log.remove()`. If no such logger exists,
+To remove a logger, use `flog.remove()`. If no such logger exists,
 the command is safely ignored.
 
 ```R
@@ -90,6 +95,7 @@ following appenders:
 + `appender.console`
 + `appender.file`
 + `appender.tee`
++ `appender.file2`
 
 To change the appenders assigned to a logger, use `flog.appender()`:
 ```R
@@ -106,12 +112,34 @@ an appender that logs to a URL might look like the following.
 url_appender.gen <- function(url) {
   conn <- url(url)
   function(line) {
-    file.write()
+    conn.write(line)
   }
 }
 ```
 
-flog.format("futile.matrix", fn)
+Logging hierarchy
+-------
+We can create python-style logging hierarchy using `appender.file2`. 
+Following snippet will write to both `mylog-WARN.log` and `mylog-INFO.log`
+```R
+flog.appender(appender.file2("mylog-~l.log", console=TRUE), name='mylogger')
+flog.warn('msg1', name='mylogger')
+```
+If we change the threshold to `DEBUG`, it will also write to `mylog-DEBUG.log`. 
+```R
+flog.threshold(DEBUG, 'mylogger')
+flog.warn('msg2', name='mylogger')
+```
+
+If set `inherit=FALSE`, will only write to `mylog-WARN.log` 
+```R
+flog.appender(appender.file2("mylog-~l.log", console=TRUE, inherit=FALSE), name='mylogger')
+flog.warn('msg3', name='mylogger')
+```
+In this scenario, if we use `flog.info`, it will only write to `mylog-INFO.log`.
+```R
+flog.info('msg4', name='mylogger')
+```
 
 Layouts
 -------
@@ -121,6 +149,7 @@ prints log messages using the following format:
 
 The layouts included in the package are:
 + layout.simple - Use a default format
++ layout.simple.parallel - Use a default format with a process id
 + layout.format - Provide a customizable format string
 + layout.tracearg - Dump a variable with its name
 
@@ -130,4 +159,5 @@ What's New
 + Function to wrap a try/catch with logging (ftry)
 + Capture output for print statements (for more complex objects)
 + New layout.tracearg
+
 

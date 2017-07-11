@@ -122,7 +122,11 @@
 #' flog.threshold(WARN,'tawny')
 #' ws <- optimizePortfolio(p, RandomMatrixDenoiser())
 #' z <- getIndexComposition()
+#' }
 #'
+#' \dontrun{
+#' flog.appender(appender.modulo(1000), name='counter')
+#' lapply(1:10000, function(i) flog.info("value is %s",i, name='counter'))
 #' }
 NULL
 
@@ -158,7 +162,7 @@ NULL
 flog.namespace <- function(.where=-4)
 {
   sf <- sys.function(.where - 1)
-  s <- capture.output(str(topenv(environment(sf)), give.attr=FALSE))
+  s <- format(topenv(environment(sf)))
   if (length(grep('lambda.r',s)) > 0)
     s <- attr(sys.function(-5), 'topenv')
 
@@ -323,6 +327,8 @@ flog.threshold('error', name='ROOT') %as% flog.threshold(ERROR, name)
 flog.threshold('FATAL', name='ROOT') %as% flog.threshold(FATAL, name)
 flog.threshold('fatal', name='ROOT') %as% flog.threshold(FATAL, name)
 
+    
+flog.threshold(threshold, name) %::% numeric : character : .
 flog.threshold(threshold, name='ROOT') %as%
 {
   flog.logger(name, threshold=threshold)
